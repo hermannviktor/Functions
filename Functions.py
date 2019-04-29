@@ -6,3 +6,6 @@ def test2(input):
         - return twice amount
     '''
     return input * 3
+
+def wtf(input):
+    return input

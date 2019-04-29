@@ -7,6 +7,7 @@ def test(input):
     '''
     return input * 2
 
+
 def test2(input):
     '''
     :param input:

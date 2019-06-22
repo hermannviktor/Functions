@@ -44,7 +44,7 @@ class BlackScholes(object):
         import numpy as np
         from scipy.stats import norm
 
-        put = self.strike * np.exp(- self.interest * self.time) * norm.cdf(-self.d2) - self.spot * norm.cdf(-self.d2)
+        put = self.strike * np.exp(- self.interest * self.time) * norm.cdf(-self.d2) - self.spot * norm.cdf(-self.d1)
         put = float(put)
 
         return put
@@ -95,7 +95,7 @@ class BlackScholes(object):
         from scipy.stats import norm
 
         theta_call = -((self.spot * norm.pdf(self.d1) * self.vol) / (2 * np.sqrt(self.time))) - (self.interest * self.strike * np.exp(- self.interest * self.time) * norm.cdf(self.d2))
-        theta_call = float(theta_call)
+        theta_call = float(theta_call / (self.time * 365))
 
         return theta_call
 
@@ -105,7 +105,7 @@ class BlackScholes(object):
         from scipy.stats import norm
 
         theta_put = -((self.spot * norm.pdf(self.d1) * self.vol) / (2 * np.sqrt(self.time))) + self.interest * self.strike * np.exp(- self.interest * self.time) * norm.cdf(-self.d2)
-        theta_put = float(theta_put)
+        theta_put = float(theta_put / (self.time * 365))
 
         return theta_put
 
@@ -115,7 +115,7 @@ class BlackScholes(object):
         from scipy.stats import norm
 
         rho_call = self.time * self.strike * np.exp(- self.interest * self.time) * norm.cdf(self.d2)
-        rho_call = float(rho_call)
+        rho_call = float(rho_call / 100)
 
         return rho_call
 
@@ -125,6 +125,52 @@ class BlackScholes(object):
         from scipy.stats import norm
 
         rho_put =  - self.time * self.strike * np.exp(- self.interest * self.time) * norm.cdf(-self.d2)
-        rho_put = float(rho_put)
+        rho_put = float(rho_put / 100)
 
         return rho_put
+
+    def call_montecarlo(self, simulations = 100000):
+        '''Compute call option price with Monte Carlo simulation'''
+        from random import gauss
+        import numpy as np
+
+        def generate_asset_price(S, v, r, T):
+            return S * np.exp((r - 0.5 * v**2) * T + v * np.sqrt(T) * gauss(0,1.0))
+
+        def call_payoff(S_T,K):
+            return max(0.0,S_T-K)
+
+        payoffs = []
+        discount_factor = np.exp(-r * T)
+
+        for i in range(simulations):
+            S_T = generate_asset_price(self.spot, self.vol, self.interest, self.time)
+            payoffs.append(call_payoff(S_T, self.strike))
+
+        call_montecarlo = discount_factor * (sum(payoffs) / float(simulations))
+        call_montecarlo = float(call_montecarlo)
+
+        return call_montecarlo
+
+    def put_montecarlo(self, simulations = 100000):
+        '''Compute call option price with Monte Carlo simulation'''
+        from random import gauss
+        import numpy as np
+
+        def generate_asset_price(S, v, r, T):
+            return S * np.exp((r - 0.5 * v**2) * T + v * np.sqrt(T) * gauss(0,1.0))
+
+        def put_payoff(S_T,K):
+            return max(0.0,K - S_T)
+
+        payoffs = []
+        discount_factor = np.exp(-r * T)
+
+        for i in range(simulations):
+            S_T = generate_asset_price(self.spot, self.vol, self.interest, self.time)
+            payoffs.append(put_payoff(S_T, self.strike))
+
+        put_montecarlo = discount_factor * (sum(payoffs) / float(simulations))
+        put_montecarlo = float(put_montecarlo)
+
+        return put_montecarlo
